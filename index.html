@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}"
+      dir="{{ 'rtl' if lang=='ar' else 'ltr' }}"
+      class="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <title>{{ t("title") }}</title>
+</head>
+<body class="transition-colors duration-500 bg-gray-50 dark:bg-gray-900
+             text-gray-900 dark:text-gray-100">
+  <div class="max-w-4xl mx-auto py-8 px-4 space-y-8">
+
+    <div class="flex justify-between items-center">
+      <h1 class="text-4xl font-extrabold">{{ t("title") }}</h1>
+      <div class="flex items-center space-x-4">
+        <button id="theme-toggle"
+                class="p-2 bg-gray-200 dark:bg-gray-700 rounded-full">
+          🌙 / ☀️
+        </button>
+        <select id="lang-switch"
+                class="p-2 bg-transparent border-b border-gray-400">
+          <option value="en" {% if lang=="en" %}selected{% endif %}>EN</option>
+          <option value="ar" {% if lang=="ar" %}selected{% endif %}>العربية</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6 space-y-4">
+      <h2 class="text-2xl font-semibold">{{ t("set_budgets") }}</h2>
+      <form action="/set_budgets" method="post"
+            class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <input type="hidden" name="lang" value="{{ lang }}"/>
+        {% for cat in categories %}
+          <label class="flex flex-col">
+            <span class="font-medium">{{ t("cat_"+cat) }}</span>
+            <input type="number" step="0.01"
+                   name="budget_{{cat}}"
+                   value="{{ budgets.get(cat,0) }}"
+                   class="mt-1 p-2 border rounded bg-gray-50
+                          dark:bg-gray-700"/>
+          </label>
+        {% endfor %}
+        <button type="submit"
+                class="md:col-span-2 px-4 py-2 bg-blue-600
+                       text-white rounded-lg hover:bg-blue-700">
+          {{ t("save_budgets") }}
+        </button>
+      </form>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6">
+      <h2 class="text-2xl font-semibold mb-4">{{ t("budget_alerts") }}</h2>
+      {% if alerts %}
+        <ul class="list-disc pl-5 text-red-600 dark:text-red-400 space-y-2">
+          {% for a in alerts %}
+            <li>{{ a }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-green-600 dark:text-green-400">
+          {{ t("within_budgets") }}
+        </p>
+      {% endif %}
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6">
+        <h2 class="text-xl font-semibold">{{ t("upload_sms") }}</h2>
+        <form action="/upload" method="post" enctype="multipart/form-data"
+              class="space-y-3">
+          <input type="hidden" name="lang" value="{{ lang }}"/>
+          <input type="file" name="file" accept=".csv"
+                 class="block w-full p-2 border rounded"/>
+          <button class="px-4 py-2 bg-blue-600 text-white rounded-lg">
+            {{ t("upload_sms") }}
+          </button>
+        </form>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6">
+        <h2 class="text-xl font-semibold">{{ t("add_manual") }}</h2>
+        <form action="/add" method="post" class="space-y-3">
+          <input type="hidden" name="lang" value="{{ lang }}"/>
+          <label>
+            <span>{{ t("description") }}</span>
+            <input name="description" required
+                   class="mt-1 p-2 w-full border rounded"/>
+          </label>
+          <label>
+            <span>{{ t("category") }}</span>
+            <select name="category" class="mt-1 p-2 w-full border rounded">
+              {% for cat in categories %}
+                <option value="{{cat}}">{{ t("cat_"+cat) }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label>
+            <span>{{ t("amount") }}</span>
+            <input name="amount" type="number" step="0.5"
+                   class="mt-1 p-2 w-full border rounded"/>
+          </label>
+          <label>
+            <span>{{ t("date") }}</span>
+            <input name="date" type="date"
+                   value="{{ now().strftime('%Y-%m-%d') }}"
+                   class="mt-1 p-2 w-full border rounded"/>
+          </label>
+          <button class="w-full px-4 py-2 bg-green-600 text-white rounded-lg">
+            {{ t("add") }}
+          </button>
+        </form>
+      </div>
+    </div>
+
+    {% if expenses %}
+      <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6 space-y-6">
+        <h2 class="text-2xl font-semibold">{{ t("all_expenses") }}</h2>
+        <div class="overflow-auto">
+          <table class="w-full table-auto">
+            <thead class="bg-gray-200 dark:bg-gray-700">
+              <tr>
+                <th class="p-2">#</th>
+                <th class="p-2">{{ t("description") }}</th>
+                <th class="p-2">{{ t("category") }}</th>
+                <th class="p-2">{{ t("amount") }}</th>
+                <th class="p-2">{{ t("date") }}</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y dark:divide-gray-700">
+              {% for e in expenses %}
+                <tr>
+                  <td class="p-2">{{ loop.index }}</td>
+                  <td class="p-2">{{ e.description }}</td>
+                  <td class="p-2">{{ t("cat_"+e.category) }}</td>
+                  <td class="p-2">{{ e.amount }}</td>
+                  <td class="p-2">{{ e.date }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div>
+            <h3 class="text-xl font-semibold mb-2">{{ t("spend_cat") }}</h3>
+            {{ pie|safe }}
+          </div>
+          <div>
+            <h3 class="text-xl font-semibold mb-2">{{ t("spend_time") }}</h3>
+            {{ bar|safe }}
+          </div>
+        </div>
+
+        <div class="p-4 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
+          <div class="p-4 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
+            <h3 class="text-xl font-semibold mb-2">{{ t("advice") }}</h3>
+            <p id="ai-advice" class="text-yellow-500 italic">🔄 {{ 'Loading advice...' if lang == 'en' else 'جاري تحميل النصيحة...' }}</p>
+          </div>
+          
+          <h3 class="text-xl font-semibold mb-2">{{ t("advice") }}</h3>
+          {% set high = (
+              expenses
+              | selectattr("amount", "gt", 100)
+              | map(attribute="category")
+              | unique
+              | list
+            ) %}
+          {% if high %}
+            <p class="text-red-600 dark:text-red-400">
+              {{ t("watch_high") }} {{ high|join(", ") }}
+            </p>
+          {% else %}
+            <p class="text-green-600 dark:text-green-400">
+              {{ t("stay_control") }}
+            </p>
+          {% endif %}
+        </div>
+      </div>
+    {% else %}
+      <p class="italic text-center">{{ t("no_data") }}</p>
+    {% endif %}
+  </div>
+
+  <script src="/static/js/theme.js"></script>
+  <script src="/static/js/i18n.js"></script>
+  <script src="/static/js/theme.js"></script>
+<script src="/static/js/i18n.js"></script>
+
+<script>
+  async function fetchAdvice() {
+    const adviceElement = document.getElementById('ai-advice');
+    try {
+      const response = await fetch('/get_ai_advice');
+      const data = await response.json();
+      adviceElement.innerText = `💡 ${data.advice}`;
+    } catch (error) {
+      adviceElement.innerText = '⚠️ {{ "Unable to load advice. Please try again later." if lang == "en" else "تعذر تحميل النصيحة. حاول مرة أخرى لاحقاً." }}';
+    }
+  }
+  fetchAdvice();
+</script>
+
+</body>
+</html>
